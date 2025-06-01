@@ -1,4 +1,4 @@
-# Titanic survival prediction using soft k-NN, decision tree, naive Bayes, and fuzzy sets
+# Program do przewidywania ocaleń z Titanica, bazujący na Soft KNN, Fuzzy KNN, Naiwnym Klasyfikatorze Bayesa i Drzewach Decyzyjnych
 
 import pandas as pd
 import numpy as np
@@ -9,33 +9,33 @@ import matplotlib.pyplot as plt
 import warnings
 warnings.filterwarnings('ignore')
 
-# Load data
+# Ładowanie danych 
 data = pd.read_csv("https://raw.githubusercontent.com/datasciencedojo/datasets/master/titanic.csv")
 
-# Select features
+# # Preprocessing - Ekstrakcja cech do modeli
 features = ['Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare', 'Embarked']
 target = 'Survived'
 
-# Fill missing values
+# Preprocessing - usuwanie braków
 data['Age'].fillna(data['Age'].median(), inplace=True)
 data['Embarked'].fillna(data['Embarked'].mode()[0], inplace=True)
 
-# Encode categorical variables
+# Preprocessing - zamiana encoderem zmiennych kategorycznych
 le_sex = LabelEncoder()
 data['Sex'] = le_sex.fit_transform(data['Sex'])
 
 le_embarked = LabelEncoder()
 data['Embarked'] = le_embarked.fit_transform(data['Embarked'])
 
-# Prepare dataset
+# Preprocessing - Ustawianie zmiennych
 X = data[features]
 y = data[target]
 
-# Standardize numerical features
+# Preprocessing - Standardowa Standaryzacja StandardScalerem 
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
 
-# Split dataset
+# Preprocessing - Podział na zbiory treningowe i testowe
 X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42)
 
 # --- Soft k-NN ---
@@ -64,7 +64,7 @@ class SoftKNN:
             predictions.append(pred)
         return predictions
 
-# --- Naive Bayes (manual) ---
+# --- Naiwny Bayes ---
 class NaiveBayes:
     def fit(self, X, y):
         self.classes = np.unique(y)
@@ -89,7 +89,7 @@ class NaiveBayes:
             preds.append(self.classes[np.argmax(posteriors)])
         return preds
 
-# --- Decision Tree (simple recursive) ---
+# --- Drzewo Decyzyjne ---
 class DecisionTree:
     def __init__(self, max_depth=5):
         self.max_depth = max_depth
@@ -146,7 +146,7 @@ class DecisionTree:
     def predict(self, X):
         return [self._predict_one(x, self.tree) for x in X]
 
-# --- Fuzzy Set Voting k-NN ---
+# --- Fuzzy k-NN ---
 def fuzzy_vote_knn(X_train, y_train, X_test, k):
     X_train = np.array(X_train)
     y_train = np.array(y_train)
@@ -163,7 +163,7 @@ def fuzzy_vote_knn(X_train, y_train, X_test, k):
         predictions.append(pred)
     return predictions
 
-# --- Evaluate for multiple k ---
+# Inicjalizacja
 k_values = range(1, 16, 2)
 soft_knn_results = []
 fuzzy_knn_results = []
@@ -185,7 +185,7 @@ best_fuzzy_k, best_fuzzy_acc = max(fuzzy_knn_results, key=lambda x: x[1])
 print(f"\nBest Soft k-NN Accuracy: {best_soft_acc:.4f} with k = {best_soft_k}")
 print(f"Best Fuzzy k-NN Accuracy: {best_fuzzy_acc:.4f} with k = {best_fuzzy_k}")
 
-# Train models with k=5
+# Trenowanie modeli dla k=5
 soft_knn = SoftKNN(k=best_soft_k)
 soft_knn.fit(X_train, y_train)
 y_pred_soft = soft_knn.predict(X_test)
@@ -200,7 +200,7 @@ y_pred_tree = tree.predict(X_test)
 
 y_pred_fuzzy = fuzzy_vote_knn(X_train, y_train, X_test, k=best_fuzzy_k)
 
-# --- Evaluate ---
+# Ewaluacja
 models = {
     "Soft k-NN": y_pred_soft,
     "Naive Bayes": y_pred_nb,
@@ -214,7 +214,7 @@ for name, preds in models.items():
     print(f"\n{name} Accuracy: {acc:.4f}, F1 Score: {f1:.4f}")
     print(classification_report(y_test, preds))
 
-# Plot k vs accuracy for k-NN methods
+# Wyświetlanie rezulatu końcowego - wykres + raport
 plt.figure(figsize=(10, 5))
 plt.plot([k for k, _ in soft_knn_results], [acc for _, acc in soft_knn_results], label='Soft k-NN')
 plt.plot([k for k, _ in fuzzy_knn_results], [acc for _, acc in fuzzy_knn_results], label='Fuzzy k-NN')
