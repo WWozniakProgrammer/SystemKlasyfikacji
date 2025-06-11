@@ -2,15 +2,71 @@
 
 import pandas as pd
 import numpy as np
+import seaborn as sns
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder, StandardScaler
-from sklearn.metrics import accuracy_score, f1_score, classification_report
+from sklearn.metrics import accuracy_score, f1_score, classification_report,ConfusionMatrixDisplay
 import matplotlib.pyplot as plt
 import warnings
 warnings.filterwarnings('ignore')
 
+
 # Ładowanie danych 
 data = pd.read_csv("https://raw.githubusercontent.com/datasciencedojo/datasets/master/titanic.csv")
+
+df_numeric = data.copy()
+df_numeric['Sex'] = data['Sex'].map({'male': 0, 'female': 1})
+df_numeric['Embarked'] = data['Embarked'].map({'S': 0, 'C': 1, 'Q': 2})
+df_numeric = df_numeric.drop(columns=['Name', 'Ticket', 'Cabin'])  # opcjonalnie usuń kolumny tekstowe
+
+# Usunięcie wierszy z brakującymi wartościami (lub można je uzupełnić)
+df_numeric = df_numeric.dropna()
+
+# Oblicz macierz korelacji
+corr_matrix = df_numeric.corr()
+
+# Wizualizacja macierzy korelacji
+plt.figure(figsize=(10, 8))
+sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', fmt=".2f")
+plt.title("Macierz korelacji Titanic")
+plt.show()
+
+
+# Wykres słupkowy – przeżycie wg płci
+plt.figure(figsize=(6, 5))
+sns.countplot(x='Sex', hue='Survived', data=data, palette='Set2')
+plt.title('Przeżywalność względem płci')
+plt.xlabel('Płeć')
+plt.ylabel('Liczba osób')
+plt.legend(title='Przeżył (1) / Zginął (0)')
+plt.grid(True)
+plt.show()
+
+# Histogram wieku
+plt.figure(figsize=(8, 5))
+sns.histplot(data['Age'], bins=20, kde=True, color='skyblue')
+plt.title('Rozkład wieku pasażerów')
+plt.xlabel('Wiek')
+plt.ylabel('Liczba pasażerów')
+plt.grid(True)
+plt.show()
+
+# Przygotowanie danych
+age_data = data[['Age', 'Survived']].copy()
+age_data['Age'] = age_data['Age'].round()
+age_grouped = age_data.groupby('Age').agg({'Survived': ['mean', 'count']})
+age_grouped.columns = ['SurvivalRate', 'PassengerCount']
+
+# Wykres słupkowy – przeżycie wg klasy
+plt.figure(figsize=(6, 5))
+sns.countplot(x='Pclass', hue='Survived', data=data, palette='Set1')
+plt.title('Przeżywalność względem klasy podróży')
+plt.xlabel('Klasa')
+plt.ylabel('Liczba osób')
+plt.legend(title='Przeżył (1) / Zginął (0)')
+plt.grid(True)
+plt.show()
+
 
 # # Preprocessing - Ekstrakcja cech do modeli
 features = ['Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare', 'Embarked']
@@ -214,6 +270,14 @@ for name, preds in models.items():
     print(f"\n{name} Accuracy: {acc:.4f}, F1 Score: {f1:.4f}")
     print(classification_report(y_test, preds))
 
+
+for name, preds in models.items():
+    ConfusionMatrixDisplay.from_predictions(y_test, preds, display_labels=["Zginął", "Przeżył"],
+                                            cmap="Blues")
+    plt.title(f'Macierzy pomyłek – {name}')
+    plt.grid(False)
+    plt.show()
+
 # Wyświetlanie rezulatu końcowego - wykres + raport
 plt.figure(figsize=(10, 5))
 plt.plot([k for k, _ in soft_knn_results], [acc for _, acc in soft_knn_results], label='Soft k-NN')
@@ -224,3 +288,5 @@ plt.title('Accuracy vs k for Soft k-NN and Fuzzy k-NN')
 plt.legend()
 plt.grid(True)
 plt.show()
+
+
